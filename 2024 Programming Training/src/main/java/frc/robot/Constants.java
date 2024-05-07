@@ -29,7 +29,7 @@ public final class Constants {
     // the robot, rather the allowed maximum speeds
     public static final double kMaxSpeedMetersPerSecond = 4;
     // competition 5 m/s
-    public static final double kMaxAngularSpeed = 2*Math.PI; // radians per second
+    public static final double kMaxAngularSpeed = 2 * Math.PI; // radians per second
     // competition 2pi
 
     public static final double kDirectionSlewRate = 1.2; // radians per second
@@ -43,7 +43,6 @@ public final class Constants {
     // Distance between front and back wheels on robot
     public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
 
-
         // new Translation2d(-kWheelBase / 2, -kTrackWidth / 2),
         // new Translation2d(-kWheelBase / 2, kTrackWidth / 2),
         // new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
@@ -56,10 +55,10 @@ public final class Constants {
 
     // Angular offsets of the modules relative to the chassis in radians
 
-    public static final double kFrontLeftChassisAngularOffset = -Math.PI/2;
+    public static final double kFrontLeftChassisAngularOffset = -Math.PI / 2;
     public static final double kFrontRightChassisAngularOffset = 0;
     public static final double kBackLeftChassisAngularOffset = Math.PI;
-    public static final double kBackRightChassisAngularOffset = Math.PI/2;
+    public static final double kBackRightChassisAngularOffset = Math.PI / 2;
 
     // public static final double kFrontLeftChassisAngularOffset = -Math.PI;
     // public static final double kFrontRightChassisAngularOffset = -Math.PI/2;
@@ -107,7 +106,7 @@ public final class Constants {
 
     public static final double kTurningP = 1.4;
     public static final double kTurningI = 0.00;
-    //.008
+    // .008
     public static final double kTurningD = 0;
     public static final double kTurningFF = 0;
     public static final double kTurningMinOutput = -1;
@@ -149,29 +148,19 @@ public final class Constants {
     public static final double launchICoefficient = 0.0;
     public static final double launchDCoefficient = 0.0;
 
-    // public static final double pivotPCoefficient = 0.02;
-    public static final double pivotPCoefficient = 0.04;
-    // .02
+    public static final double pivotPCoefficient = 0.0;
     public static final double pivotICoefficient = 0.0;
     public static final double pivotDCoefficient = 0.0;
 
-    // prototype numbers:
-    // P: .1 I: 0 D: 0
-
-
-    public static final double lebronPCoefficient = 0.08;
+    public static final double lebronPCoefficient = 0.0;
     public static final double lebronICoefficient = 0.0;
     public static final double lebronDCoefficient = 0.0;
   }
 
   public static final class IntakeConstants {
-    public static final double flipperPCoefficient = 0.06;
+    public static final double flipperPCoefficient = 0.0;
     public static final double flipperICoefficient = 0.0;
     public static final double flipperDCoefficient = 0.0;
-
-    // prototype numbers:
-    // P: .1 I: 0 D: 0
-
   }
 
 }

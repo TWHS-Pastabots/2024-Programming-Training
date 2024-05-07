@@ -1,5 +1,6 @@
 package frc.robot.subsystems.launcher;
 
+import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
@@ -8,26 +9,23 @@ import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.revrobotics.CANSparkMax.FaultID;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import frc.robot.subsystems.IO.DigitalInputs;
 import frc.robot.Constants.LauncherConstants;
+import frc.robot.subsystems.IO.DigitalInputs;
 import frc.robot.Ports;
 
 public class Launcher {
 
     public enum LauncherState {
-        // AMP(-48.5, 1.0),
         AMP(-60.5, 1.0),
         ALTAMP(-55, 0.9),
         START(0, 0.0),
-        TRAP(-70.04991149902344, 0.8),
         LONG(-13.25, 1.0),
         HANDOFF(9, 0.5),
         HOVER(-3, 1.0),
         TOSS(-22, .80),
-        AUTOMIDSHOT(-12, 1.0),
-        AUTOLEFTSHOT(-13.5, 1.0),
-        AUTORIGHTSHOT(-13.5, 1.0),
         SPEAKER(-56, 1.0),
         ALTSPEAKER(-23, 1.0),
         INTERLOPE(0.0, 1.0),
@@ -64,52 +62,84 @@ public class Launcher {
 
     private CANSparkMax lebronMotor;
 
-    private SparkMaxPIDController pivotController;
-    private SparkMaxPIDController lebronController;
-
-    private RelativeEncoder encoder;
-    private RelativeEncoder boxScore;
+    private double increment = 1.0;
 
     private ArmFeedforward feedForward;
+    private ArmFeedforward lebronFeedForward;
+
+    private SparkMaxPIDController pivotController1;
+
+    private SparkMaxPIDController lebronController;
+
+    private static RelativeEncoder encoder;
+    private static AbsoluteEncoder absEncoder;
+
+    private static RelativeEncoder boxScore;
 
     private DigitalInputs breakBeam;
 
-    private boolean[] connections = new boolean[10];
+    private boolean[] connections = new boolean[8];
 
-    private static LauncherState launchState = LauncherState.LONG;
+    private static LauncherState launchState = LauncherState.START;
     private static LeBronTeam leBronTeam = LeBronTeam.CAVS;
 
     public static Launcher instance;
 
-
-//*LAUNCHER DAY ONE START*/
-
-    //Launcher constructor
-    //Should intialize and configure: two shoot motors, one amp mechanism motor, one pivot motor
-    //Things to consider: CAN ID, motor type, current limit, motor direction, motor idle mode
-    //Launcher IDs: shoot motors(9, 13), pivot motor(10), amp motor(17), flicker(14)
-
     public Launcher() {
+        shootMotor1 = new CANSparkMax(Ports.shootMotor1, MotorType.kBrushless);
+        shootMotor1.restoreFactoryDefaults();
 
-        //*Write here */
+        shootMotor1.setSmartCurrentLimit(60);
+        shootMotor1.setIdleMode(IdleMode.kBrake);
+        shootMotor1.setInverted(false);
+        shootMotor1.burnFlash();
 
-        //* */
+        shootMotor2 = new CANSparkMax(Ports.shootMotor2, MotorType.kBrushless);
+        shootMotor2.restoreFactoryDefaults();
 
+        shootMotor2.setSmartCurrentLimit(60);
+        shootMotor2.setIdleMode(IdleMode.kBrake);
+        shootMotor2.setInverted(false);
+        shootMotor2.burnFlash();
 
-        //* Ignore this */
+        flicker = new CANSparkMax(Ports.flicker, MotorType.kBrushless);
+        flicker.restoreFactoryDefaults();
+
+        flicker.setSmartCurrentLimit(20);
+        flicker.setIdleMode(IdleMode.kBrake);
+        flicker.setInverted(false);
+        flicker.burnFlash();
+
+        pivotMotor = new CANSparkMax(Ports.pivotMotor, MotorType.kBrushless);
+        pivotMotor.restoreFactoryDefaults();
+
+        pivotMotor.setSmartCurrentLimit(60);
+        pivotMotor.setIdleMode(IdleMode.kBrake);
+        pivotMotor.setInverted(true);
+
+        pivotMotor.setOpenLoopRampRate(1);
+
+        lebronMotor = new CANSparkMax(Ports.lebron, MotorType.kBrushless);
+        lebronMotor.restoreFactoryDefaults();
+
+        lebronMotor.setSmartCurrentLimit(20);
+        lebronMotor.setIdleMode(IdleMode.kBrake);
+
+        feedForward = new ArmFeedforward(0.0, 0.0, 0.0, 0.0);
+
+        lebronFeedForward = new ArmFeedforward(0, 0, 0);
+
         encoder = pivotMotor.getEncoder();
 
-        pivotController = pivotMotor.getPIDController();
+        pivotController1 = pivotMotor.getPIDController();
 
-        pivotController.setP(LauncherConstants.pivotPCoefficient);
-        pivotController.setI(LauncherConstants.pivotICoefficient);
-        pivotController.setD(LauncherConstants.pivotDCoefficient);
+        pivotController1.setP(LauncherConstants.pivotPCoefficient);
+        pivotController1.setI(LauncherConstants.pivotICoefficient);
+        pivotController1.setD(LauncherConstants.pivotDCoefficient);
 
-        pivotController.setFeedbackDevice(encoder);
+        pivotController1.setFeedbackDevice(encoder);
 
-        pivotController.setOutputRange(-1, 1);
-
-        feedForward = new ArmFeedforward(0.012, 0.017, 0.0, 0.0);
+        pivotController1.setOutputRange(-1, 1);
 
         lebronController = lebronMotor.getPIDController();
 
@@ -124,58 +154,94 @@ public class Launcher {
         lebronController.setI(LauncherConstants.lebronICoefficient);
         lebronController.setD(LauncherConstants.lebronDCoefficient);
 
-        //* Ignore this */
+        pivotMotor.burnFlash();
+        lebronMotor.burnFlash();
+
+        breakBeam = DigitalInputs.getInstance();
+
     }
 
-    //moves the launcher down
-    public void setPivotPower() {}
-
-    //Moves the launcher up
-    public void setReversePivotPower() {}
-
-    //Softly spits out ring
-    public void eject() {}
-
-    //Moves the amp mechanism down
-    public void setLeBronOn() {}
-
-    //Moves the amp mechanism up
-    public void setLeBronReverse() {}
-
-    //Turns off the amp mechanism
-    public void setLeBronOff() {}
-
-    //Turns off the launcher pivot
-    public void setPivotOff() {}
-
-    //Turns shoot motors on
-    public void setLauncherOn() {}
-
-    //Turns shoot motors on in reverse
-    public void setReverseLauncherOn() {}
-
-    //Turns shoot motors off
-    public void setLauncherOff() {}
-
-    //Turns flicker on
-    public void setFlickerOn() {}
-
-    //Turns flicker on in reverse
-    public void setFlickerReverse() {}
-
-    //Turns flicker off
-    public void setFlickOff() {}
-
-
-//* LAUNCHER DAY ONE END*/
-
-
-    public double getLauncherPosition(){
-        return encoder.getPosition();
+    public void updatePose() {
     }
 
-    public double getLeBronPosition(){
+    public void setPivotPower() {
+        pivotMotor.set(anglePower + feedForward.calculate(absEncoder.getPosition(), 0));
+    }
+
+    public void setReversePivotPower() {
+        pivotMotor.set(anglePower + feedForward.calculate(absEncoder.getPosition(), 0));
+    }
+
+    public void eject() {
+        shootMotor2.set(0);
+        shootMotor1.set(launchState.launchSpeed);
+    }
+
+    public void setLeBronOn() {
+        lebronMotor.set(-0.5);
+    }
+
+    public void setLeBronReverse() {
+        lebronMotor.set(0.5);
+    }
+
+    public void setLeBronOff() {
+        lebronMotor.set(0.0);
+    }
+
+    public void setPivotOff() {
+        pivotMotor.set(0.0);
+    }
+
+    public double getTestPosition() {
+        return LauncherState.TEST.position;
+    }
+
+    public double getLeBronPosition() {
         return boxScore.getPosition();
+    }
+
+    public void setLauncherOn() {
+        if (launchState == LauncherState.AMP) {
+            shootMotor1.set(launchState.launchSpeed * 0.1);
+            shootMotor2.set(launchState.launchSpeed * 0.1);
+        } else if (launchState == LauncherState.ALTAMP) {
+            shootMotor1.set(-launchState.launchSpeed);
+            shootMotor2.set(launchState.launchSpeed * 0.1);
+        } else {
+            shootMotor1.set(launchState.launchSpeed);
+            shootMotor2.set(launchState.launchSpeed);
+        }
+    }
+
+    public void setReverseLauncherOn() {
+        shootMotor1.set(-launchState.launchSpeed);
+        shootMotor2.set(-launchState.launchSpeed);
+    }
+
+    public void setLauncherOff() {
+        shootMotor1.set(0.0);
+        shootMotor2.set(0.0);
+    }
+
+    public void setFlickerOn() {
+        flicker.set(1.0);
+    }
+
+    public void setFlickerReverse() {
+        flicker.set(-1.0);
+    }
+
+    public void setFlickerPartial() {
+        flicker.set(0.85);
+    }
+
+    public void setFlickOff() {
+        flicker.set(0);
+    }
+
+    public double getLauncherPosition() {
+        return encoder.getPosition();
     }
 
     public boolean getBreakBeam() {
@@ -191,7 +257,7 @@ public class Launcher {
     }
 
     public boolean hasReachedPose(double tolerance) {
-        return false;
+        return Math.abs(getLauncherPosition() - launchState.position) < tolerance;
     }
 
     public void setLauncherState(LauncherState state) {
@@ -201,18 +267,27 @@ public class Launcher {
     public void setLeBronTeam(LeBronTeam team) {
         leBronTeam = team;
     }
- 
-    public void updatePose(){
-        pivotController.setReference(launchState.position, CANSparkMax.ControlType.kPosition, 0,
-        feedForward.calculate(encoder.getPosition(), 0));
 
-        lebronController.setReference(leBronTeam.position, CANSparkMax.ControlType.kPosition, 0);
-}
+    public void increaseIncrement() {
+        increment += 0.25;
+    }
 
-    public void moveLeBron() {}
+    public void decreaseInrement() {
+        increment -= 0.25;
+    }
 
-    public void setFlickerPartial(){
-        flicker.set(0.5);
+    public void increasePosition() {
+        LauncherState.TEST.position = LauncherState.TEST.position - increment;
+        if (launchState == LauncherState.SPEAKER) {
+            LauncherState.SPEAKER.position = LauncherState.SPEAKER.position + increment;
+        } else if (launchState == LauncherState.ALTSPEAKER) {
+            LauncherState.ALTSPEAKER.position = LauncherState.ALTSPEAKER.position +
+                    increment;
+        }
+    }
+
+    public void decreasePosition() {
+        LauncherState.TEST.position = LauncherState.TEST.position + increment;
     }
 
     public boolean[] launcherConnections() {
@@ -259,22 +334,10 @@ public class Launcher {
             connections[6] = false;
         }
 
-        if (flicker.getBusVoltage() != 0) {
+        if (flicker.getOutputCurrent() != 0) {
             connections[7] = true;
         } else {
             connections[7] = false;
-        }
-
-        if(lebronMotor.getBusVoltage() != 0){
-            connections[8] = true;
-        } else {
-            connections[8] = false;
-        }
-
-        if(lebronMotor.getOutputCurrent() != 0){
-            connections[9] = true;
-        } else {
-            connections[9] = false;
         }
 
         return connections;

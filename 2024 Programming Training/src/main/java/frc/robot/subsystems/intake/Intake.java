@@ -3,9 +3,12 @@ package frc.robot.subsystems.intake;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Constants.IntakeConstants;
 import frc.robot.Ports;
 import frc.robot.subsystems.IO.DigitalInputs;
 
@@ -30,6 +33,11 @@ public class Intake {
     public IntakeState intakeState = IntakeState.STOP;
     public static Intake instance;
 
+    private double power = 1.0;
+    //.9 shot into the launcher
+
+    private double flip = 0.25;
+
     private ArmFeedforward feedforward;
     private SparkMaxPIDController flipperController;
 
@@ -39,36 +47,67 @@ public class Intake {
 
     private boolean[] connections = new boolean[4];
     
-//*INTAKE DAY ONE START*/
-
-    //Intake Constructor
-    //Should initialize and configure: one roller motor, one pivot motor
-    //Things to consider: CAN ID, motor type, current limit, motor direction, motor idle mode
-    //Intake IDs: shoot motors(12), pivot motor(16)
-
     public Intake() {
-     
+        roller = new CANSparkMax(Ports.roller, MotorType.kBrushless);
+        roller.restoreFactoryDefaults();
+
+        roller.setSmartCurrentLimit(40);
+        roller.setIdleMode(IdleMode.kCoast);
+        roller.setInverted(false);
+        roller.burnFlash();
+
+        flipper = new CANSparkMax(Ports.flipper, MotorType.kBrushless);
+        flipper.restoreFactoryDefaults();
+
+        flipper.setSmartCurrentLimit(70);
+        flipper.setIdleMode(IdleMode.kBrake);
+        flipper.setInverted(true);
+
+        feedforward = new ArmFeedforward(0.04, 0.05, 0, 0);
+
+        encoder = flipper.getEncoder();
+
+        flipperController = flipper.getPIDController();
+        flipperController.setFeedbackDevice(encoder);
+        flipperController.setOutputRange(-1.0, 1.0);
+
+        flipperController.setP(IntakeConstants.flipperPCoefficient);
+        flipperController.setI(IntakeConstants.flipperICoefficient);
+        flipperController.setD(IntakeConstants.flipperDCoefficient);
+
+        breakBeam = DigitalInputs.getInstance();
+
+        flipper.burnFlash();
     }
 
-    //Turns the rollers on
-    public void setRollerPower() {}
+    public void updatePose() {
 
-    //Turns the rollers on in reverse
-    public void setReverseRollerPower() {}
+    }
 
-    //Turns the rollers off
-    public void setRollerOff() {}
+    public void setRollerPower() {
+        roller.set(power);
+    }
 
-    //Flips the intake out
-    public void setFlipperPower() {}
+    public void setReverseRollerPower() {
+        roller.set(-power);
+    }
 
-    //Flips the intake back up
-    public void setReverseFlipperPower() {}
+    public void setFlipperPower() {
+        flipper.set(flip + feedforward.calculate(encoder.getPosition(),
+                0));
+    }
 
-    //Turns of the intake pivot
-    public void setFlipperOff() {}
+    public void setReverseFlipperPower() {
+        flipper.set(-flip + feedforward.calculate(encoder.getPosition(), 0));
+    }
 
-//*INTAKE DAY ONE END*/
+    public void setFlipperOff() {
+        flipper.set(0.0);
+    }
+
+    public void setRollerOff() {
+        roller.set(0);
+    }
 
     public double getRollerCurrent() {
         return roller.getOutputCurrent();
@@ -85,13 +124,6 @@ public class Intake {
     public double getFlipperPosition() {
         return encoder.getPosition();
     }
-
-    public void updatePose() {
-        flipperController.setReference(intakeState.position,
-                CANSparkMax.ControlType.kPosition, 0,
-                feedforward.calculate(encoder.getPosition(), 0));
-    }
-
 
     public IntakeState getIntakeState() {
         return intakeState;

@@ -5,10 +5,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.IO.LED;
 import frc.robot.subsystems.climber.Climber;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.Intake.IntakeState;
 import frc.robot.subsystems.launcher.Launcher;
 import frc.robot.subsystems.launcher.Launcher.LauncherState;
-import frc.robot.subsystems.launcher.Launcher.LeBronTeam;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
@@ -34,7 +32,6 @@ public class Robot extends TimedRobot {
     intake = Intake.getInstance();
     climber = Climber.getInstance();
     litty = LED.getInstance();
-    visTables = VisionTablesListener.getInstance();
 
     driver = new XboxController(0);
     operator = new XboxController(1);
@@ -87,9 +84,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // intake.updatePose();
-    // launcher.updatePose();
-
     /* DRIVE CONTROLS */
 
     double ySpeed = drivebase.inputDeadband(-driver.getLeftX());
@@ -125,32 +119,7 @@ public class Robot extends TimedRobot {
 
     /* INTAKE CONTROLS */
 
-    if(operator.getRightBumper()){
-      intake.setFlipperPower();
-    } else if (operator.getLeftBumper()){
-      intake.setReverseFlipperPower();
-    } else {
-      intake.setFlipperOff();
-    }
-
-    if(operator.getAButton()){
-      intake.setRollerPower();
-    } else if(operator.getBButton()){
-      intake.setReverseRollerPower();
-    } else {
-      intake.setRollerOff();
-    }
-
-    if (operator.getLeftBumper()) {
-      intake.setIntakeState(IntakeState.STOP);
-      launcher.setLauncherState(LauncherState.HOVER);
-      launcher.setLeBronTeam(LeBronTeam.CAVS);
-      launcher.updatePose();
-      launcher.moveLeBron();
-      launcher.setLauncherOff();
-      launcher.setFlickOff();
-      litty.setBlue();
-    }
+    //* Should be able to change intake states, flip intake in/out, run the rollers in either direction, eventually run handoff command*/
 
     // *CLIMBER CONTROLS */
 
@@ -164,48 +133,9 @@ public class Robot extends TimedRobot {
 
     /* LAUNCHER CONTROLS */
 
-    if (-operator.getRightY() > 0) {
-    launcher.setPivotPower();
-    } else if (-operator.getRightY() < 0) {
-    launcher.setReversePivotPower();
-    } else {
-    launcher.setPivotOff();
-    }
+    //* Should be able to change launcher states, move the launcher up/down,
+    //run the flywheels in either direction, change amp mechanism states, move amp mechanism up/down, eventually runn shoot command */
 
-    if(operator.getRightTriggerAxis() > 0){
-      launcher.setLauncherOn();
-    } else if (operator.getLeftTriggerAxis() > 0){
-      launcher.setReverseLauncherOn();
-    } else {
-      launcher.setLauncherOff();
-    }
-
-    if(operator.getXButton()){
-      launcher.setFlickerOn();
-    } else if(operator.getBButton()){
-      launcher.setFlickerReverse();
-    } else{
-      launcher.setFlickOff();
-    }
-
-    if (operator.getPOV() == 0) {
-      launcher.setLauncherState(LauncherState.SPEAKER);
-    }
-    if (operator.getPOV() == 90) {
-      launcher.setLauncherState(LauncherState.AMP);
-    }
-    if (operator.getPOV() == 180) {
-      launcher.setLauncherState(LauncherState.TOSS);
-    }
-    if (operator.getPOV() == 270) {
-      launcher.setLauncherState(LauncherState.LONG);
-    }
-
-    if (operator.getXButton()) {
-      intake.setReverseRollerPower();
-      launcher.setFlickerReverse();
-      launcher.setReverseLauncherOn();
-    }
   }
 
   @Override
